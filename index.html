@@ -183,6 +183,7 @@
         </ol>
       </div>
       <label class="check" style="margin-top:12px"><input type="checkbox" id="bw"><span>The IRS has notified me that I am <b>currently subject to backup withholding</b> (this crosses out item 2).</span></label>
+      <div class="hint" style="margin-left:30px">Most people leave this unchecked. Only check it if you received an IRS notice saying you are subject to backup withholding.</div>
 
       <label style="margin-top:18px">Sign here</label>
       <div class="sigbox" id="sigbox">
@@ -284,8 +285,7 @@ canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCa
 canvas.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();strokes[strokes.length-1].push(pt(e));redraw();});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>canvas.addEventListener(t,()=>drawing=false));
 $('clearSig').onclick=()=>{strokes=[];hasInk=false;$('sigph').style.display='';redraw();};
-window.addEventListener('resize',()=>{ /* keep strokes; rescale proportionally */
-  const old=canvas.getBoundingClientRect().width; sizeCanvas(); });
+window.addEventListener('resize',sizeCanvas);
 sizeCanvas();
 
 /* Crop signature to its ink and return a PNG data URL */
@@ -370,10 +370,10 @@ async function buildPDF(){
   }
   // Date
   page.drawText(todayStr(),{x:410,y:196.5,size:10,font:helv,color:rgb(0,0,0)});
-  // Backup withholding: cross out item 2 (lines at y≈ 532–508 top-down)
+  // Backup withholding: cross out the 3 lines of certification item 2
   if($('bw').checked){
     const blk=rgb(0,0,0);
-    [[36,792-531.5,576],[46,792-541,576],[46,792-550.5,182]].forEach(([x1,y,x2])=>page.drawLine({start:{x:x1,y},end:{x:x2,y},thickness:.8,color:blk}));
+    [[46,306.6,561],[45,297,572.5],[45,287.4,207]].forEach(([x1,y,x2])=>page.drawLine({start:{x:x1,y},end:{x:x2,y},thickness:.8,color:blk}));
   }
   pdf.setTitle('Form W-9 – '+$('name').value.trim());
   pdf.setSubject('Electronically signed Form W-9, '+todayStr());
