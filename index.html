@@ -60,7 +60,7 @@
   <div class="card">
     <h1>Form W-9</h1>
     <p class="sub">Request for Taxpayer Identification Number and Certification (IRS Rev. March 2024)</p>
-    <div class="req" id="reqBanner">Requested by <b id="reqNameTxt"></b>. Fill this in, sign with your finger or mouse, and send the completed PDF back. You don't need to print or scan anything.</div>
+    <div class="req" id="reqBanner"><span id="reqLead"></span>Fill this in, sign with your finger or mouse, and send the completed PDF back. You don't need to print or scan anything.</div>
   </div>
 
   <form id="w9" novalidate>
@@ -217,8 +217,8 @@
 <script>
 /* ===================== SETTINGS: change these ===================== */
 const REQUESTER = {
-  name:    "Pankaj Galhotra CPA",
-  address: "1217 Winding Oak Dr\nYork, PA 17403",
+  name:    "",                      // left blank on purpose: "Requester's name and address" is optional on the W-9
+  address: "",
   email:   ""                       // e.g. "you@yourfirm.com" — shown in instructions & used for the email fallback
 };
 /* Optional link overrides, so one page works for any requester:
@@ -234,7 +234,8 @@ if (P.get('email')) REQUESTER.email = P.get('email');
 if (P.get('acct'))  document.getElementById('acct').value = P.get('acct');
 
 const $ = id => document.getElementById(id);
-$('reqNameTxt').textContent = REQUESTER.name;
+$('reqLead').innerHTML = REQUESTER.name ? `Requested by <b>${REQUESTER.name.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</b>. ` : '';
+const WHO = () => REQUESTER.name || 'the person who sent you this link';
 
 /* ---------- classification UI ---------- */
 function clsVal(){ const r=document.querySelector('input[name=cls]:checked'); return r?r.value:''; }
@@ -349,7 +350,7 @@ async function buildPDF(){
   T(F+'f1_06[0]',$('fatca').value.trim());
   T(A+'f1_07[0]',$('addr').value.trim());
   T(A+'f1_08[0]',`${$('city').value.trim()}, ${$('state').value} ${$('zip').value.trim()}`);
-  T(F+'f1_09[0]',REQUESTER.address?`${REQUESTER.name}\n${REQUESTER.address}`:REQUESTER.name);
+  if(REQUESTER.name) T(F+'f1_09[0]',REQUESTER.address?`${REQUESTER.name}\n${REQUESTER.address}`:REQUESTER.name);
   T(F+'f1_10[0]',$('acct').value.trim());
   if(tinType==='SSN'){const d=digits($('ssn').value); T(F+'f1_11[0]',d.slice(0,3)); T(F+'f1_12[0]',d.slice(3,5)); T(F+'f1_13[0]',d.slice(5));}
   else {const d=digits($('ein').value); T(F+'f1_14[0]',d.slice(0,2)); T(F+'f1_15[0]',d.slice(2));}
@@ -393,8 +394,8 @@ $('w9').addEventListener('submit',async e=>{
     const canShare=!!(navigator.canShare&&navigator.canShare({files:[new File([pdfBlob],pdfName,{type:'application/pdf'})]}));
     $('shareBtn').classList.toggle('hidden',!canShare);
     $('doneMsg').innerHTML = (canShare
-      ? `Tap <b>Send PDF</b> and choose Mail or Messages to send it to ${esc(REQUESTER.name)}`
-      : `Download the PDF and email it to ${esc(REQUESTER.name)}`) +
+      ? `Tap <b>Send PDF</b> and choose Mail or Messages to send it to ${esc(WHO())}`
+      : `Download the PDF and email it to ${esc(WHO())}`) +
       (REQUESTER.email?` at <b>${esc(REQUESTER.email)}</b>.`:'.');
     $('done').classList.add('show'); $('done').scrollIntoView({behavior:'smooth'});
   }catch(err){console.error(err);alert('Sorry, the PDF could not be created: '+err.message);}
@@ -403,7 +404,7 @@ $('w9').addEventListener('submit',async e=>{
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 $('shareBtn').onclick=async()=>{
-  try{ await navigator.share({files:[new File([pdfBlob],pdfName,{type:'application/pdf'})],title:pdfName,text:`Signed Form W-9 for ${REQUESTER.name}`}); }
+  try{ await navigator.share({files:[new File([pdfBlob],pdfName,{type:'application/pdf'})],title:pdfName,text:'Signed Form W-9'}); }
   catch(e){ if(e.name!=='AbortError') download(); }
 };
 function download(){const u=URL.createObjectURL(pdfBlob),a=document.createElement('a');a.href=u;a.download=pdfName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);
